@@ -1,0 +1,154 @@
+body {
+	font-family:arial;;
+	background-color: #d7d7d7;
+	font-family: 'Heebo', sans-serif;
+	color:#423f3f;
+	font-weight: bold;
+}
+.content {
+	display: flex;
+	align-items: center;
+	align-content: center;
+	justify-content: center;
+	width: 100%;
+	height: 100vh;
+	max-height: 90vh;
+}
+.card {
+	width: 700px;
+	padding: 0;
+	margin: 0;
+	max-width: 700px;
+	min-width: 300px;
+	overflow: hidden;
+	border-radius: 50px;
+	box-shadow:1px 2px 5px rgba(0,0,0,0.2);
+	background-color:white;
+}
+@keyframes blink-red {
+	0% {background-color:rgba(230, 71, 71, 0.7)};
+	100% {background-color:white};
+}
+@keyframes blink-green {
+	0% {background-color:rgba(139, 214, 159)};
+	100% {background-color:white};
+}
+.red-alert {
+	animation: blink-red 1s ease-out;
+}
+.green-alert {
+	animation: blink-green 1s ease-out;
+}
+.top-card {
+	background-color: #5da3e8;
+	color: white;
+	height: 70px;
+	line-height: 70px;
+	top: -23px;
+	position: relative;
+	padding-left: 18px;
+}
+.top-card p {
+	display:flex;
+	align-items: center;
+	align-content: center;
+	justify-content: center;
+	margin-top: -87px;
+	margin-left: 600px;
+	font-size: 40px;
+	background-color:rgba(100,100,200,0.2);
+	width:12%;
+	border-radius:40px;	
+	padding-right:10%;
+	box-shadow:1px 0px 3px rgba(0,0,0,0.6);
+	height:90%;
+}
+.middle-card {
+	padding: 10px;
+}
+.actions {
+	text-align: center;
+}
+#hint-input {
+	padding: 7px;
+	padding-left: 8px;
+	margin: 10px;
+	outline: none;
+	border: none;
+	border-top: 0px solid black;
+	border-bottom: 1px solid black;
+	border-radius: 5px;
+}
+#hint-input:disabled {
+	background-color:rgba(255,255,255,0.1);
+}
+#rule {
+	text-align:center;
+	padding:5px;
+}
+button {
+	background-color: #5da3e8;
+	border: none;
+	color: white;
+	width: 100px;
+	height: 40px;
+	text-align: center;
+	margin:10px 10px;
+	border-radius: 20px;
+	position:relative;
+	cursor:pointer;
+	font-weight:bold;
+}
+#button-submit {
+	top: 8px;
+	position: relative;
+}
+
+#button-submit:hover {
+	background-color:#2f87dd;
+	transition:.max-height .2s ease;
+}
+#button-newgame {
+	visibility: hidden;
+	max-height:0;
+	transition: max-height .2s ease, top .2s ease;
+	position:relative;
+	top:28px;
+}
+.guesses {
+	transition: top .5s ease;
+	position: relative;
+	bottom: 10px;
+	visibility:hidden;
+	font-weight:bold;
+}
+.attempts-para {
+	position:relative;
+	transition: max-height .3s ease, opacity .3s ease;
+	visibility: hidden;
+	max-height:0px;
+}
+
+@media only screen and (max-width: 768px) {
+	.top-card {
+		text-align:center;
+		padding-left:0;
+	}
+	.top-card p {
+		margin-left:88.5%;
+		font-size:30px;
+		height:88%;
+		padding-top:3px;
+	}
+}
+@media only screen and (max-width:365px) {
+	.top-card h1 {
+		position:relative;
+		left:-15px;
+	}
+	.top-card p {
+		font-size:25px;
+		padding-top:7px;
+		height:80%;
+	}
+}
