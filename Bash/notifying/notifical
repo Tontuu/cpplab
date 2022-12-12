@@ -18,6 +18,7 @@ declare calendar=$(cal 2022 -n $monthRange -m --color=never)
 declare -a targetDates=()
 declare -r defaultColor="red"
 declare timeoutArg="20000"
+declare inputFile=""
 
 
 # Miscellanous variables
@@ -223,7 +224,7 @@ parseArgumentDate() {
 
 parseInputFile() {
     local fileColor="$defaultColor";
-    local inputFile="$1"
+    inputFile="$1"
     ! isFile "$1" && argErr "f" "$inputFile"
 
     if isSet "$2"; then
@@ -307,6 +308,7 @@ while [[ "$#" -gt 0 ]]; do
 	elif [[ $1 == "-n" || $1 == "--months" ]]; then
 	    ! isSet "$2" && argErr "n" || parseMonthRange "$2" && shift
 
+        # TODO: Fix timeout argument not working when inserted after another argument
 	elif [[ $1 == "-t" || $1 == "--timeout" ]]; then
 	    ! isSet "$2" && argErr "t" || parseTimeout "$2" && timeoutArg="$2" && shift
 
@@ -349,6 +351,6 @@ targetDates+=("$today yellow")
 formatOutput "$output"
 
 # To get to libnotify working on cron job xorg server we need to set these env variables up
-DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus notify-send -t "$timeoutArg" "Notifical" "$output" && todayy /home/ton/MyTon/Documents/notes/toDos.md
+DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus notify-send -t "$timeoutArg" "Notifical" "$output"
 
 exit 0
