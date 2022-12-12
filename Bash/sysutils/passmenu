@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+
+# 1 - source copy from https://geluk.io/p/passmenu.sh (https://github.com/Baggykiin/pass-winmenu)
+# 2 - make dmenu case insensitive
+# 3 - correct include_username variable
+# 4 - only pick out usernames if they are the start of the sentence, i.e. ignore non-primary usernames listed in the file (mostly for bitbucket)
+# 5 - dependency test and install
+# 6 - error output on bad argument
+
+shopt -s nullglob globstar
+
+typeit=0
+include_username=1
+editit=0
+deps=0
+
+while [[ -n "$1" ]]; do
+	if [[ $1 == "--type" ]]; then
+		typeit=1
+	elif [[ $1 == "--no-username" ]]; then
+		include_username=0
+	elif [[ $1 == "--edit" ]]; then
+		editit=1
+	elif [[ $1 == "--install-dependencies" ]]; then
+		deps=1
+	elif [[ $1 == "--" ]]; then
+		break;
+        else
+                echo "Error: unhandled argument $1." >&2
+                exit 1
+	fi
+	shift
+done
+
+if [[ $deps -eq 1 ]]; then
+	sudo apt install dmenu xclip xdotool -y
+	exit
+fi
+
+if ! [ -x "$(command -v dmenu)" ]; then
+	echo 'Error: dmenu is not installed.' >&2
+	exit 1
+fi
+
+prefix=${PASSWORD_STORE_DIR-~/.password-store}
+password_files=( "$prefix"/**/*.gpg )
+password_files=( "${password_files[@]#"$prefix"/}" )
+password_files=( "${password_files[@]%.gpg}" )
+
+password=$(printf '%s\n' "${password_files[@]}" | dmenu -l 10 -fn "Terminus:style=Regular:size=9" -nb "#1a1a1a" -nf white -sb "#960f23" -i "$@")
+
+if [[ $editit -eq 1 ]]; then
+		# Insert the edit command for your preferred terminal here:
+		#termite -e "pass edit '$password' > /dev/null"
+		#xterm "pass edit '$password' > /dev/null"
+		#urxvt -e "pass edit '$password' > /dev/null"
+		#gnome-terminal -- pass edit "$password" > /dev/null
+		# ..etc
+		exit
+fi
+
+[[ -n $password ]] || exit
+
+if ! [ -x "$(command -v xclip)" ]; then
+	echo 'Error: xclip is not installed.' >&2
+	exit 1
+fi
+
+if [[ $typeit -eq 0 ]]; then
+	pass show -c "$password" | xclip
+
+else
+	if ! [ -x "$(command -v xdotool)" ]; then
+		echo 'Error: xdotool is not installed.' >&2
+		exit 1
+	fi
+
+	pwfile=$(pass show "$password")
+	password=$(printf "%s" "$pwfile" | sed -n 1p)
+	username=$(printf "%s" "$pwfile" | grep -Po "^[Uu]ser(name)?: \K(.*)")
+	printf '%s' "$password" | xclip -selection clipboard
+	print '%s' "$password" | xclip
+	if [ -z "$username" ] || [[ $include_username -eq 0 ]]; then
+		printf '%s' "$password" | xdotool type --clearmodifiers --file -
+	else
+		pstr=$(printf '%s\t%s' "$username" "$password")
+		xdotool type "$pstr"
+	fi
+fi

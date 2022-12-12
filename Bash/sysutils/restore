@@ -1,0 +1,13 @@
+# Set keyboard repeat rate
+xset r rate 200 50
+
+# Swap caps and escape
+setxkbmap -option caps:swapescape
+
+# Map Hyper_L
+xmodmap -e "keycode 134 = Hyper_L"
+
+
+echo "Restore is DONE"
+
+exit 0

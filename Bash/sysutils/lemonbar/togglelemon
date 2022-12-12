@@ -1,0 +1,13 @@
+#!/bin/bash
+
+TOGGLEMSG="Lemonbar is:"
+
+# Lemonbar is running? Yes: Kill, No: Launch.
+if pgrep -x "lemonbar" > /dev/null; then
+	pkill lemonbar > /dev/null 2>&1
+	bspc config bottom_padding 0
+else
+	$HOME/Code/Bash/sysutils/lemonbar/mylemonbar | lemonbar -b -p -f "Terminus:size=8" | sh > /dev/null
+fi
+
+exit 0
