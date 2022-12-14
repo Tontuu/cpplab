@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Set up dunst or whatever notification daemon you use to more than 500px window width
 # Thus, the calendar output doesn't misalign or inharmonious.
 
@@ -11,6 +10,9 @@ declare -r today=$(date "+%d/%m")
 declare -a months days targetMonths targetDays
 declare week output=""
 declare dateRegex="([1-9]|0[1-9]|[1-2][0-9]|3[0-1])[\/](0[1-9]|[1-2][0-2]|[1-9])"
+declare todayOutput=""
+declare printToday=0
+declare printOnlyToday=0
 
 # User variables
 declare monthRange="3"
@@ -180,11 +182,11 @@ formatOutput() {
 parseMonthRange() {
     monthRange="$1"
     if ! [[ "$monthRange" =~ ^[0-9]+$ ]]; then
-	argErr "x" "$monthRange"
+	argErr "nn" "$monthRange"
     fi
 
     if [ "$monthRange" -lt 1 ] || [ "$monthRange" -gt 3 ]; then
-	argErr "m" "$monthRange"
+	argErr "nm" "$monthRange"
     fi
 
     calendar=$(cal 2022 -n $monthRange -m --color=never)
@@ -193,49 +195,47 @@ parseMonthRange() {
 parseTimeout() {
     timeoutNumber="$1"
     if ! [[ "$timeoutNumber" =~ ^[0-9]+$ ]]; then
-	argErr "z" "$timeoutNumber"
+	argErr "tn" "$timeoutNumber"
     fi
 }
 
 parseArgumentDate() {
     local argRegex="${dateRegex}( +[a-zA-Z]+) *"
     local oneWordRegex="(^ +[^ ]+$)|(^[^ ]+$)|(^[^ ]+ +$)|(^ +[^ ]+ +$)"
-
     local arg="$1"
     
     # If arg matches regex "mm/xx color"
     if [[ $arg =~ $argRegex ]]; then
 	local argColor=$(printf "$arg" | awk '{ print $2 }')
-
 	# Check if arg has a valid color
 	if isColor "$argColor"; then
 	    targetDates+=("$arg")
 	else
-	    argErr "c" "$argColor"
+	    argErr "ac" "$argColor"
 	fi
 
     elif [[ $arg =~ $oneWordRegex ]]; then
 	# Check if arg has only 1 word
-	argErr "c" "$arg"
+	argErr "ac" "$arg"
     else
-	argErr "a" "$arg"
+	argErr "ia" "$arg"
     fi
 }
 
 parseInputFile() {
     local fileColor="$defaultColor";
     inputFile="$1"
-    ! isFile "$1" && argErr "f" "$inputFile"
+    ! isFile "$1" && argErr "If" "$inputFile"
 
     if isSet "$2"; then
 	if isColor "$2"; then
-           fileColor="$2"  # || argErr "c" "$2"
+           fileColor="$2"
 	else
 	   parseArgumentDate "$2"
 	fi
     fi
 
-    ! [[ -f $inputFile ]] && argErr "f" "$inputFile"
+    ! [[ -f $inputFile ]] && argErr "If" "$inputFile"
 
     local fileDates=$(cat $inputFile | grep -E -o --color=never "$dateRegex" | sed -e "s/$/ $fileColor/")
 
@@ -250,7 +250,7 @@ isSet() {
 }
 
 isColor() {
-    matchColor=$(printf "$1" | xargs)
+    matchColor=$(printf -- "$1" | xargs)
 
     declare -a availableColors=(
 	black white gray silver maroon
@@ -275,16 +275,16 @@ argErr() {
     printf "${RED}ERROR${NC}: "
 
     case "$errCode" in
-	u) printf "\`%s\` Unexpected argument\n"                      "$errStr"   ;;
-	a) printf "\`%s\` Invalid date argument\n $datesExample\n"    "$errStr"   ;;
-	c) printf "\`%s\` Is not a supported color\n $listColors\n\n" "$errStr"   ;;
-	f) printf "\`%s\` Is not a valid file\n" "$errStr" && grep="--input-file" ;;
-	x) printf "\`%s\` is not a number\n"     "$errStr" && grep="--months"     ;;
-	z) printf "\`%s\` is not a number\n"     "$errStr" && grep="--timeout"    ;;
-	m) printf "\`%s\` is not between 1-3\n"  "$errStr" && grep="--months"     ;;
-	n) printf "Expected a range of months\n"           && grep="--months"     ;;
-	i) printf "Expected input file\n"                  && grep="--input-file" ;;
-	t) printf "Expected timeout argument\n"            && grep="--timeout"    ;;
+	ua)  printf "\`%s\` Unexpected argument\n"                      "$errStr"    ;;
+	ia)  printf "\`%s\` Invalid date argument\n $datesExample\n"    "$errStr"    ;;
+	ac)  printf "\`%s\` Is not a supported color\n $listColors\n\n" "$errStr"    ;;
+	If)  printf "\`%s\` Is not a valid file\n" "$errStr"  && grep="--input-file" ;;
+	tn)  printf "\`%s\` is not a number\n"     "$errStr"  && grep="--timeout"    ;;
+	nn)  printf "\`%s\` is not a number\n"     "$errStr"  && grep="--months"     ;;
+	nm)  printf "\`%s\` is not between 1-3\n"  "$errStr"  && grep="--months"     ;;
+	en)  printf "Expected a range of months\n"            && grep="--months"     ;;
+	ei)  printf "Expected input file\n"                   && grep="--input-file" ;;
+	et)  printf "Expected timeout argument\n"             && grep="--timeout"    ;;
     esac
 
     set +u
@@ -294,6 +294,30 @@ argErr() {
     printf "%s\n" "$moreInfo"
 
     exit 1
+}
+
+today() {
+    set -e
+    set -u
+
+    local target="#"
+    local repl="🞄"
+    local fRed="\033[31m" # foreground red
+    local rs="\033[0m"    # reset color
+
+    set +u
+    # Check if is empty
+    if ! [[ -z $1 ]]; then
+	if ! [[ -f $1 ]]; then
+	    printf "${fRed}ERROR: ${rs}\`%s\` File provided is not a valid text file\n" "$input" >&2
+	    exit 1
+	fi
+	todayOutput=$(cat $1 | grep "$target" | sed "s/#/$REPL/g")
+    fi
+
+    printToday=1
+
+    set -u
 }
 
 # Format calendar style and trim each individual piece into separated variables
@@ -306,18 +330,17 @@ while [[ "$#" -gt 0 ]]; do
 	if [[ $1 == "-h" || $1 == "--help" ]]; then
 	    printf "Notify calendar and day reminder\n\n$usage\n" && exit 0
 	elif [[ $1 == "-n" || $1 == "--months" ]]; then
-	    ! isSet "$2" && argErr "n" || parseMonthRange "$2" && shift
+	    ! isSet "$2" && argErr "en" || parseMonthRange "$2" && shift
 
-        # TODO: Fix timeout argument not working when inserted after another argument
 	elif [[ $1 == "-t" || $1 == "--timeout" ]]; then
-	    ! isSet "$2" && argErr "t" || parseTimeout "$2" && timeoutArg="$2" && shift
+	    ! isSet "$2" && argErr "et" || parseTimeout "$2" && timeoutArg="$2" && shift
 
 	elif [[ $1 == "-l" || $1 == "--list-colors" ]]; then
 	    printf "%s\n" "$listColors" && exit 0
 
-	elif [[ "$1" == "-i" || $1 == "--input-file" ]]; then
+	elif [[ $1 == "-i" || $1 == "--input-file" ]]; then
 	    if isSet "$2"; then
-                isFile "$2" || argErr "f" "$2"
+                isFile "$2" || argErr "If" "$2"
 		if isSet "$3"; then
 		    parseInputFile "$2" "$3"
 		    shift
@@ -325,14 +348,34 @@ while [[ "$#" -gt 0 ]]; do
 		    parseInputFile "$2"
 		fi
 	    else
-		argErr "i" "$2"
+		argErr "ei" "$2"
 	    fi
 	    shift
 	    
 	elif [[ $1 =~ ${dateRegex} ]]; then
 	    parseArgumentDate "$1"
+	elif [[ $1 == "-d" || $1 == "--today" ]]; then
+	    if isSet "$2"; then
+		if [ "$2" == "only" ]; then
+		    printOnlyToday=1
+		    today ""
+		else
+		    today "$2"
+		fi
+
+	        set +u
+		if isSet "$3"; then
+		    if [ "$3" == "only" ]; then
+			printOnlyToday=1
+			shift
+		    fi
+		fi
+		shift
+	    else
+		today "";
+	    fi
 	else
-	    argErr "u" "$1"
+	    argErr "ua" "$1"
 	fi
     fi
     shift
@@ -351,6 +394,13 @@ targetDates+=("$today yellow")
 formatOutput "$output"
 
 # To get to libnotify working on cron job xorg server we need to set these env variables up
-DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus notify-send -t "$timeoutArg" "Notifical" "$output"
+if [[ $printToday -eq 1 ]]; then
+    declare todayDate="$(date +'%D %A %T')"
+    DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus notify-send -t "$timeoutArg" "$todayDate" "$todayOutput"
+fi
+
+if [[ $printOnlyToday -ne 1 ]]; then
+    DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus notify-send -t "$timeoutArg" "Notifical" "$output"
+fi
 
 exit 0
