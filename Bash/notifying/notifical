@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Set up dunst or whatever notification daemon you use to more than 500px window width
 # Thus, the calendar output doesn't misalign or inharmonious.
 
@@ -180,11 +179,11 @@ formatOutput() {
 parseMonthRange() {
     monthRange="$1"
     if ! [[ "$monthRange" =~ ^[0-9]+$ ]]; then
-	argErr "x" "$monthRange"
+	argErr "nn" "$monthRange"
     fi
 
     if [ "$monthRange" -lt 1 ] || [ "$monthRange" -gt 3 ]; then
-	argErr "m" "$monthRange"
+	argErr "nm" "$monthRange"
     fi
 
     calendar=$(cal 2022 -n $monthRange -m --color=never)
@@ -193,7 +192,7 @@ parseMonthRange() {
 parseTimeout() {
     timeoutNumber="$1"
     if ! [[ "$timeoutNumber" =~ ^[0-9]+$ ]]; then
-	argErr "z" "$timeoutNumber"
+	argErr "tn" "$timeoutNumber"
     fi
 }
 
@@ -211,31 +210,31 @@ parseArgumentDate() {
 	if isColor "$argColor"; then
 	    targetDates+=("$arg")
 	else
-	    argErr "c" "$argColor"
+	    argErr "ac" "$argColor"
 	fi
 
     elif [[ $arg =~ $oneWordRegex ]]; then
 	# Check if arg has only 1 word
-	argErr "c" "$arg"
+	argErr "ac" "$arg"
     else
-	argErr "a" "$arg"
+	argErr "ia" "$arg"
     fi
 }
 
 parseInputFile() {
     local fileColor="$defaultColor";
     inputFile="$1"
-    ! isFile "$1" && argErr "f" "$inputFile"
+    ! isFile "$1" && argErr "If" "$inputFile"
 
     if isSet "$2"; then
 	if isColor "$2"; then
-           fileColor="$2"  # || argErr "c" "$2"
+           fileColor="$2"
 	else
 	   parseArgumentDate "$2"
 	fi
     fi
 
-    ! [[ -f $inputFile ]] && argErr "f" "$inputFile"
+    ! [[ -f $inputFile ]] && argErr "If" "$inputFile"
 
     local fileDates=$(cat $inputFile | grep -E -o --color=never "$dateRegex" | sed -e "s/$/ $fileColor/")
 
@@ -275,16 +274,16 @@ argErr() {
     printf "${RED}ERROR${NC}: "
 
     case "$errCode" in
-	u) printf "\`%s\` Unexpected argument\n"                      "$errStr"   ;;
-	a) printf "\`%s\` Invalid date argument\n $datesExample\n"    "$errStr"   ;;
-	c) printf "\`%s\` Is not a supported color\n $listColors\n\n" "$errStr"   ;;
-	f) printf "\`%s\` Is not a valid file\n" "$errStr" && grep="--input-file" ;;
-	x) printf "\`%s\` is not a number\n"     "$errStr" && grep="--months"     ;;
-	z) printf "\`%s\` is not a number\n"     "$errStr" && grep="--timeout"    ;;
-	m) printf "\`%s\` is not between 1-3\n"  "$errStr" && grep="--months"     ;;
-	n) printf "Expected a range of months\n"           && grep="--months"     ;;
-	i) printf "Expected input file\n"                  && grep="--input-file" ;;
-	t) printf "Expected timeout argument\n"            && grep="--timeout"    ;;
+	ua)  printf "\`%s\` Unexpected argument\n"                      "$errStr"    ;;
+	ia)  printf "\`%s\` Invalid date argument\n $datesExample\n"    "$errStr"    ;;
+	ac)  printf "\`%s\` Is not a supported color\n $listColors\n\n" "$errStr"    ;;
+	If)  printf "\`%s\` Is not a valid file\n" "$errStr"  && grep="--input-file" ;;
+	tn)  printf "\`%s\` is not a number\n"     "$errStr"  && grep="--timeout"    ;;
+	nn)  printf "\`%s\` is not a number\n"     "$errStr"  && grep="--months"     ;;
+	nm)  printf "\`%s\` is not between 1-3\n"  "$errStr"  && grep="--months"     ;;
+	en)  printf "Expected a range of months\n"            && grep="--months"     ;;
+	ei)  printf "Expected input file\n"                   && grep="--input-file" ;;
+	et)  printf "Expected timeout argument\n"             && grep="--timeout"    ;;
     esac
 
     set +u
@@ -306,18 +305,18 @@ while [[ "$#" -gt 0 ]]; do
 	if [[ $1 == "-h" || $1 == "--help" ]]; then
 	    printf "Notify calendar and day reminder\n\n$usage\n" && exit 0
 	elif [[ $1 == "-n" || $1 == "--months" ]]; then
-	    ! isSet "$2" && argErr "n" || parseMonthRange "$2" && shift
+	    ! isSet "$2" && argErr "en" || parseMonthRange "$2" && shift
 
         # TODO: Fix timeout argument not working when inserted after another argument
 	elif [[ $1 == "-t" || $1 == "--timeout" ]]; then
-	    ! isSet "$2" && argErr "t" || parseTimeout "$2" && timeoutArg="$2" && shift
+	    ! isSet "$2" && argErr "et" || parseTimeout "$2" && timeoutArg="$2" && shift
 
 	elif [[ $1 == "-l" || $1 == "--list-colors" ]]; then
 	    printf "%s\n" "$listColors" && exit 0
 
 	elif [[ "$1" == "-i" || $1 == "--input-file" ]]; then
 	    if isSet "$2"; then
-                isFile "$2" || argErr "f" "$2"
+                isFile "$2" || argErr "If" "$2"
 		if isSet "$3"; then
 		    parseInputFile "$2" "$3"
 		    shift
@@ -325,14 +324,14 @@ while [[ "$#" -gt 0 ]]; do
 		    parseInputFile "$2"
 		fi
 	    else
-		argErr "i" "$2"
+		argErr "ei" "$2"
 	    fi
 	    shift
 	    
 	elif [[ $1 =~ ${dateRegex} ]]; then
 	    parseArgumentDate "$1"
 	else
-	    argErr "u" "$1"
+	    argErr "ua" "$1"
 	fi
     fi
     shift
