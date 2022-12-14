@@ -8,24 +8,22 @@ TARGET="#"
 REPL="🞄"
 FRED="\033[31m" # foreground red
 RS="\033[0m"    # reset color
+OUTPUT=""
 
 set +u
-
 # Check if is empty
-if [[ -z $1 ]]; then
-    printf "${FRED}ERROR: ${RS}File was not provided\n" >&2
-    exit 1
-fi
+if ! [[ -z $1 ]]; then
+    # Check if is a invalid file
+    if ! [[ -f $1 ]]; then
+	printf "${FRED}ERROR: ${RS}\`%s\` File provided is not a valid text file\n" "$INPUT" >&2
+	exit 1
+    fi
 
-# Check if is a invalid file
-if ! [[ -f $1 ]]; then
-    printf "${FRED}ERROR: ${RS}\`%s\` File provided is not a valid text file\n" "$INPUT" >&2
-    exit 1
+    OUTPUT=$(cat $1 | grep "$TARGET" | sed "s/#/$REPL/g")
 fi
+set -u
 
-OUTPUT=$(cat $1 | grep "$TARGET" | sed "s/#/$REPL/g")
 
 # Need this variables to send notify-send through cron job
 DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus notify-send -t 20000 "$DATE" "$OUTPUT"
 
-set -u

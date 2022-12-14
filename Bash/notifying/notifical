@@ -10,6 +10,9 @@ declare -r today=$(date "+%d/%m")
 declare -a months days targetMonths targetDays
 declare week output=""
 declare dateRegex="([1-9]|0[1-9]|[1-2][0-9]|3[0-1])[\/](0[1-9]|[1-2][0-2]|[1-9])"
+declare todayOutput=""
+declare printToday=0
+declare printOnlyToday=0
 
 # User variables
 declare monthRange="3"
@@ -199,13 +202,11 @@ parseTimeout() {
 parseArgumentDate() {
     local argRegex="${dateRegex}( +[a-zA-Z]+) *"
     local oneWordRegex="(^ +[^ ]+$)|(^[^ ]+$)|(^[^ ]+ +$)|(^ +[^ ]+ +$)"
-
     local arg="$1"
     
     # If arg matches regex "mm/xx color"
     if [[ $arg =~ $argRegex ]]; then
 	local argColor=$(printf "$arg" | awk '{ print $2 }')
-
 	# Check if arg has a valid color
 	if isColor "$argColor"; then
 	    targetDates+=("$arg")
@@ -249,7 +250,7 @@ isSet() {
 }
 
 isColor() {
-    matchColor=$(printf "$1" | xargs)
+    matchColor=$(printf -- "$1" | xargs)
 
     declare -a availableColors=(
 	black white gray silver maroon
@@ -295,6 +296,30 @@ argErr() {
     exit 1
 }
 
+today() {
+    set -e
+    set -u
+
+    local target="#"
+    local repl="🞄"
+    local fRed="\033[31m" # foreground red
+    local rs="\033[0m"    # reset color
+
+    set +u
+    # Check if is empty
+    if ! [[ -z $1 ]]; then
+	if ! [[ -f $1 ]]; then
+	    printf "${fRed}ERROR: ${rs}\`%s\` File provided is not a valid text file\n" "$input" >&2
+	    exit 1
+	fi
+	todayOutput=$(cat $1 | grep "$target" | sed "s/#/$REPL/g")
+    fi
+
+    printToday=1
+
+    set -u
+}
+
 # Format calendar style and trim each individual piece into separated variables
 formatCalendar "$calendar"
 
@@ -307,14 +332,13 @@ while [[ "$#" -gt 0 ]]; do
 	elif [[ $1 == "-n" || $1 == "--months" ]]; then
 	    ! isSet "$2" && argErr "en" || parseMonthRange "$2" && shift
 
-        # TODO: Fix timeout argument not working when inserted after another argument
 	elif [[ $1 == "-t" || $1 == "--timeout" ]]; then
 	    ! isSet "$2" && argErr "et" || parseTimeout "$2" && timeoutArg="$2" && shift
 
 	elif [[ $1 == "-l" || $1 == "--list-colors" ]]; then
 	    printf "%s\n" "$listColors" && exit 0
 
-	elif [[ "$1" == "-i" || $1 == "--input-file" ]]; then
+	elif [[ $1 == "-i" || $1 == "--input-file" ]]; then
 	    if isSet "$2"; then
                 isFile "$2" || argErr "If" "$2"
 		if isSet "$3"; then
@@ -330,6 +354,26 @@ while [[ "$#" -gt 0 ]]; do
 	    
 	elif [[ $1 =~ ${dateRegex} ]]; then
 	    parseArgumentDate "$1"
+	elif [[ $1 == "-d" || $1 == "--today" ]]; then
+	    if isSet "$2"; then
+		if [ "$2" == "only" ]; then
+		    printOnlyToday=1
+		    today ""
+		else
+		    today "$2"
+		fi
+
+	        set +u
+		if isSet "$3"; then
+		    if [ "$3" == "only" ]; then
+			printOnlyToday=1
+			shift
+		    fi
+		fi
+		shift
+	    else
+		today "";
+	    fi
 	else
 	    argErr "ua" "$1"
 	fi
@@ -350,6 +394,13 @@ targetDates+=("$today yellow")
 formatOutput "$output"
 
 # To get to libnotify working on cron job xorg server we need to set these env variables up
-DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus notify-send -t "$timeoutArg" "Notifical" "$output"
+if [[ $printToday -eq 1 ]]; then
+    declare todayDate="$(date +'%D %A %T')"
+    DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus notify-send -t "$timeoutArg" "$todayDate" "$todayOutput"
+fi
+
+if [[ $printOnlyToday -ne 1 ]]; then
+    DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus notify-send -t "$timeoutArg" "Notifical" "$output"
+fi
 
 exit 0
