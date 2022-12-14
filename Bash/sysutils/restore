@@ -7,6 +7,8 @@ setxkbmap -option caps:swapescape
 # Map Hyper_L
 xmodmap -e "keycode 134 = Hyper_L"
 
+# US keyboard layout with deadkeys
+setxkbmap us -variant intl
 
 echo "Restore is DONE"
 
