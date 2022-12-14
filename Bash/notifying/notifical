@@ -33,10 +33,11 @@ ${RED}Usage${NC}:
   ./$(basename "$0") [option...] [dates...]
 
 ${RED}Options${NC}:
-   -n, --months       Specifies how many months will be shown to a range of 1 to 3
-   -t, --timeout      Specifies the timeout in milliseconds at which to expire the notification
-   -i, --input-file   Specifies the input file with date patterns to be scrapped
-   -l, --list-colors  Print list of available colors for highlighting"
+   -n, --months                       Specifies how many months will be shown to a range of 1 to 3
+   -t, --timeout                      Specifies the timeout in milliseconds at which to expire the notification
+   -i, --input-file                   Specifies the input file with date patterns to be scrapped
+   -l, --list-colors                  Print list of available colors for highlighting
+   -d, --today [path/to/file || only] Notify only todayy program or also the today program"
 
 declare datesExample="\
    Example: ./$(basename "$0") ${YEL}\"dd/mm color\"${NC}"
