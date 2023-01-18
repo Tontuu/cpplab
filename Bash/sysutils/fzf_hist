@@ -1,5 +1,0 @@
-#!/bin/bash
-
-command=$(echo -e "$(history | cut -c 8-) $(cat ~/.bash_history)" | fzf)
-
-xdotool type "$command"
